@@ -1,0 +1,40 @@
+﻿<Window x:Class="WqpViewTest.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WqpViewTest"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="3*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 真ん中の行：横並び -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+
+            <!-- 左：Departments -->
+            <GroupBox Header="Departments" Margin="6" Width="450">
+                <DataGrid x:Name="DepartmentsGrid"
+                          AutoGenerateColumns="True"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          SelectionMode="Single"
+                          SelectionChanged="DepartmentsGrid_SelectionChanged" />
+            </GroupBox>
+
+            <!-- 右：Employees（選択部署のみ表示） -->
+            <GroupBox Header="Employees (選択部署のみ)" Margin="6" Width="450">
+                <DataGrid x:Name="EmployeesGrid"
+                          AutoGenerateColumns="True"
+                          IsReadOnly="True"
+                          CanUserAddRows="False" />
+            </GroupBox>
+
+        </StackPanel>
+    </Grid>
+
+</Window>
