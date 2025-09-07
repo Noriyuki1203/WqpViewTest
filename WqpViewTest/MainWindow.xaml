@@ -20,10 +20,21 @@
             <GroupBox Header="Departments" Margin="6" Width="450">
                 <DataGrid x:Name="DepartmentsGrid"
                           AutoGenerateColumns="True"
-                          IsReadOnly="True"
+                          IsReadOnly="False"
                           CanUserAddRows="False"
                           SelectionMode="Single"
-                          SelectionChanged="DepartmentsGrid_SelectionChanged" />
+                          SelectionChanged="DepartmentsGrid_SelectionChanged"
+                         >
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="更新 (Refresh)" />
+                            <Separator/>
+                            <MenuItem Header="部署を追加…" />
+                            <MenuItem Header="部署を削除"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+
+                </DataGrid>
             </GroupBox>
 
             <!-- 右：Employees（選択部署のみ表示） -->

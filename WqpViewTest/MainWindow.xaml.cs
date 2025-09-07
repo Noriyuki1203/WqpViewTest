@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using Microsoft.VisualBasic;
+using System.Data;
 using System.Data.SQLite;
 using System.IO;
 using System.Text;
@@ -99,5 +100,49 @@ namespace WqpViewTest
             // 選択が外れた／取得失敗時は右をクリア
             EmployeesGrid.ItemsSource = null;
         }
+
+        private void DepartmentsGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (DepartmentsGrid.SelectedItem is not DataRowView row) return;
+
+            // 既存値の取得
+            if (!int.TryParse(row["DepartmentId"].ToString(), out int depId)) return;
+            string oldName = row["DepartmentName"]?.ToString() ?? "";
+
+            // 入力ダイアログ
+            string? newName = Interaction.InputBox(
+                "部署名を入力してください：", "部署名の編集", oldName);
+
+            // Cancel or 変更なし
+            if (newName is null) return;
+            newName = newName.Trim();
+            if (newName.Length == 0 || newName == oldName) return;
+
+            try
+            {
+                using var cn = new SQLiteConnection(ConnStr);
+                cn.Open();
+                using var tx = cn.BeginTransaction();
+
+                using (var cmd = new SQLiteCommand(
+                    "UPDATE Departments SET DepartmentName = @name WHERE DepartmentId = @id;", cn, tx))
+                {
+                    cmd.Parameters.AddWithValue("@name", newName);
+                    cmd.Parameters.AddWithValue("@id", depId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                tx.Commit();
+                LoadDepartments(); // 再読込
+
+                // 変更した部署の従業員を右側も更新（選択を維持していれば自動でもOKだが明示的に）
+                LoadEmployeesByDepartment(depId);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("部署名更新エラー:\n" + ex.Message);
+            }
+        }
+
     }
 }
