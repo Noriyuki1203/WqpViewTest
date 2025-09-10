@@ -10,18 +10,26 @@ namespace WqpViewTest
 {
     public class DatabeseHelper
     {
+        // SQLiteの接続文字列
         private const string ConnectonString = "Data Source=mydb.db;Version=3;";
 
+
+        /// <summary>
+        /// データベースへの接続
+        /// </summary>
         public void ConnectToDatabase()
         {
             try
             {
+                // SQLiteクラスのインスタンスを生成
                 using (var connection = new SQLiteConnection(ConnectonString))
                 {
+                    // データベースファイルを開く
                     connection.Open();
                     System.Diagnostics.Debug.WriteLine("SQLiteに接続成功しました。");
                 }
 
+                // テーブル作成
                 CreateTable(ConnectonString);
             }
             catch (Exception ex)
@@ -30,16 +38,26 @@ namespace WqpViewTest
             }
         }
 
+
+        /// <summary>
+        /// テーブル作成メソッド
+        /// </summary>
+        /// <param name="ConectionString"></param>
         private void CreateTable(String ConectionString)
         {
+            // SQLiteクラスのインスタンスを生成
             using (var connection = new SQLiteConnection(ConectionString))
             {
+                // データベースファイルを開く
                 connection.Open();
+
+                // 外部キーをオンにする
                 using (var pragmaCmd = new SQLiteCommand("PRAGMA foreign_keys = ON;", connection))
                 {
                     pragmaCmd.ExecuteNonQuery();
                 }
 
+                // SQL文を作成
                 string sql = @"
         -- 親テーブル: 部署
                     CREATE TABLE IF NOT EXISTS Departments (
@@ -59,6 +77,7 @@ namespace WqpViewTest
                             );
                        ";
 
+                // 作成したSQL文を実行する
                 using var cmd = new SQLiteCommand(sql, connection);
                 cmd.ExecuteNonQuery();
             }

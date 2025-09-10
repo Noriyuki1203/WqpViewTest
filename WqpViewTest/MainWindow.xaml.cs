@@ -20,43 +20,75 @@ namespace WqpViewTest
     /// </summary>
     public partial class MainWindow : Window
     {
+        // DBへの接続文字列
         private static readonly string DbPath = "mydb.db";
         private static readonly string ConnStr = $"Data Source={DbPath};Version=3;";
 
+        // ★ 空でもヘッダーを出すためにスキーマを持ったテーブルを保持
+        private readonly DataTable _employeesTable = new DataTable();
+
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
             DatabeseHelper dbHelper = new DatabeseHelper();
             dbHelper.ConnectToDatabase();
+
+            InitEmployeesTableSchema();
+
             LoadDepartments();      // 左の表を読み込む
-            EmployeesGrid.ItemsSource = null; // 右は最初は空でもOK
+            EmployeesGrid.ItemsSource = _employeesTable.DefaultView;
+
 
         }
 
+
+        /// <summary>
+        /// デパートテーブルをロードする
+        /// </summary>
         private void LoadDepartments()
         {
             try
             {
+                // もしDBへのパスが無ければ
                 if (!File.Exists(DbPath))
                 {
+                    // メッセージ表示
                     MessageBox.Show($"DBが見つかりません:\n{DbPath}");
                     return;
                 }
 
+                // DBに接続する
                 using var cn = new SQLiteConnection(ConnStr);
                 cn.Open();
+
 
                 using var da = new SQLiteDataAdapter(
                     "SELECT DepartmentId, DepartmentName FROM Departments ORDER BY DepartmentId;", cn);
                 var dt = new DataTable();
                 da.Fill(dt);
                 DepartmentsGrid.ItemsSource = dt.DefaultView;
+
+
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Departments 読み込みエラー:\n" + ex.Message);
             }
         }
+
+        private void InitEmployeesTableSchema()
+        {
+            _employeesTable.Columns.Add("EmployeeId", typeof(int));
+            _employeesTable.Columns.Add("Name", typeof(string));
+            _employeesTable.Columns.Add("Age", typeof(int));
+            _employeesTable.Columns.Add("DepartmentId", typeof(int));
+            // 行は入れない（0件）→ でもヘッダーは出る
+        }
+
 
         private void LoadEmployeesByDepartment(int departmentId)
         {
@@ -86,19 +118,16 @@ namespace WqpViewTest
         // 左の選択が変わったら右を絞り込み表示
         private void DepartmentsGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            // DataGridの行は DataRowView で来る
-            if (DepartmentsGrid.SelectedItem is DataRowView row)
+            if (DepartmentsGrid.SelectedItem is DataRowView row &&
+                      row.Row.Table.Columns.Contains("DepartmentId") &&
+                      int.TryParse(row["DepartmentId"]?.ToString(), out int depId))
             {
-                if (row.Row.Table.Columns.Contains("DepartmentId") &&
-                    int.TryParse(row["DepartmentId"].ToString(), out int depId))
-                {
-                    LoadEmployeesByDepartment(depId);
-                    return;
-                }
+                LoadEmployeesByDepartment(depId);
             }
-
-            // 選択が外れた／取得失敗時は右をクリア
-            EmployeesGrid.ItemsSource = null;
+            else
+            {
+                _employeesTable.Clear(); // ← nullにしない
+            }
         }
 
         private void DepartmentsGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
