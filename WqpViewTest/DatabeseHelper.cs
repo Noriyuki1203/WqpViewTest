@@ -59,7 +59,7 @@ namespace WqpViewTest
 
                 // SQL文を作成
                 string sql = @"
-        -- 親テーブル: 部署
+                    -- 親テーブル: 部署
                     CREATE TABLE IF NOT EXISTS Departments (
                         DepartmentId   INTEGER PRIMARY KEY AUTOINCREMENT,
                         DepartmentName TEXT NOT NULL
@@ -71,11 +71,12 @@ namespace WqpViewTest
                         Name         TEXT NOT NULL,
                         Age          INTEGER,
                         DepartmentId INTEGER NOT NULL,
+                        IsActive     INTEGER NOT NULL DEFAULT 1, -- Bool相当 (1=true, 0=false)
                         FOREIGN KEY (DepartmentId) REFERENCES Departments(DepartmentId)
                             ON DELETE CASCADE
                             ON UPDATE CASCADE
-                            );
-                       ";
+                    );
+                    ";
 
                 // 作成したSQL文を実行する
                 using var cmd = new SQLiteCommand(sql, connection);

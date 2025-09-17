@@ -8,7 +8,10 @@
         Title="MainWindow" Height="450" Width="800">
 
     <Window.Resources>
-        <!-- 見出しを枠内に表示する GroupBox テンプレート -->
+        <!-- 0/1 <-> bool -->
+        <local:IntToBoolConverter x:Key="IntToBoolConverter"/>
+
+        <!-- 見出しを枠内に表示する GroupBox テンプレート（そのまま） -->
         <Style x:Key="InnerHeaderGroupBox" TargetType="GroupBox">
             <Setter Property="BorderBrush" Value="#9AA0A6"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -17,16 +20,14 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="GroupBox">
                         <Border BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="6"
-                  Padding="{TemplateBinding Padding}">
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
                             <DockPanel LastChildFill="True">
-                                <!-- ★ 枠の“内側”にヘッダーを配置 -->
                                 <ContentPresenter ContentSource="Header"
-                                DockPanel.Dock="Top"
-                                Margin="0,0,0,8"
-                                RecognizesAccessKey="True"/>
-                                <!-- 中身 -->
+                                                  DockPanel.Dock="Top"
+                                                  Margin="0,0,0,8"
+                                                  RecognizesAccessKey="True"/>
                                 <ContentPresenter/>
                             </DockPanel>
                         </Border>
@@ -36,7 +37,6 @@
         </Style>
     </Window.Resources>
 
-
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -44,10 +44,8 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- 真ん中の行：横並び -->
         <StackPanel Grid.Row="1" Orientation="Horizontal">
-
-            <!-- 左：Departments -->
+            <!-- 左：Departments（そのまま） -->
             <GroupBox Header="Departments" Margin="6" Width="250" Style="{StaticResource InnerHeaderGroupBox}">
                 <DataGrid x:Name="DepartmentsGrid"
                           AutoGenerateColumns="False"
@@ -55,8 +53,7 @@
                           CanUserAddRows="False"
                           SelectionMode="Single"
                           SelectionChanged="DepartmentsGrid_SelectionChanged"
-                           RowHeaderWidth="0"
-                         >
+                          RowHeaderWidth="0">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="更新 (Refresh)" />
@@ -66,23 +63,33 @@
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.Columns>
-                        <!-- DataRowView の列名を [] で参照 -->
                         <DataGridTextColumn Header="部署ID" Binding="{Binding [DepartmentId]}" SortMemberPath="DepartmentId"/>
-                        <DataGridTextColumn Header="部署名"   Binding="{Binding [DepartmentName]}" SortMemberPath="DepartmentName"  Width="*"/>
+                        <DataGridTextColumn Header="部署名" Binding="{Binding [DepartmentName]}" SortMemberPath="DepartmentName" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </GroupBox>
 
-            <!-- 右：Employees（選択部署のみ表示） -->
+            <!-- 右：Employees -->
             <GroupBox Header="Employees (選択部署のみ)" Margin="6" Width="450">
                 <DataGrid x:Name="EmployeesGrid"
-                          AutoGenerateColumns="True"
-                          IsReadOnly="True"
-                          CanUserAddRows="False" 
-                          RowHeaderWidth="0"/>
-            </GroupBox>
+                          AutoGenerateColumns="False"
+                          IsReadOnly="False"
+                          CanUserAddRows="False"
+                          RowHeaderWidth="0"
+                          CellEditEnding="EmployeesGrid_CellEditEnding">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding [EmployeeId]}" IsReadOnly="True" Width="60"/>
+                        <DataGridTextColumn Header="名前" Binding="{Binding [Name]}" Width="*"/>
+                        <DataGridTextColumn Header="年齢" Binding="{Binding [Age]}" Width="60"/>
+                        <DataGridTextColumn Header="部署ID" Binding="{Binding [DepartmentId]}" IsReadOnly="True" Width="80"/>
 
+                        <!-- ★ 0/1 をチェックボックスで表示・編集 -->
+                        <DataGridCheckBoxColumn Header="有効"
+                                                Binding="{Binding [IsActive], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource IntToBoolConverter}}"
+                                                Width="80"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </GroupBox>
         </StackPanel>
     </Grid>
-
 </Window>

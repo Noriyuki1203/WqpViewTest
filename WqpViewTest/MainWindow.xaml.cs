@@ -86,8 +86,9 @@ namespace WqpViewTest
             _employeesTable.Columns.Add("Name", typeof(string));
             _employeesTable.Columns.Add("Age", typeof(int));
             _employeesTable.Columns.Add("DepartmentId", typeof(int));
-            // 行は入れない（0件）→ でもヘッダーは出る
+            _employeesTable.Columns.Add("IsActive", typeof(int)); // 0/1想定
         }
+
 
 
         private void LoadEmployeesByDepartment(int departmentId)
@@ -98,10 +99,10 @@ namespace WqpViewTest
                 cn.Open();
 
                 using var cmd = new SQLiteCommand(
-                    @"SELECT EmployeeId, Name, Age, DepartmentId
-                      FROM Employees
-                      WHERE DepartmentId = @id
-                      ORDER BY EmployeeId;", cn);
+                    @"SELECT EmployeeId, Name, Age, DepartmentId, IsActive
+              FROM Employees
+              WHERE DepartmentId = @id
+              ORDER BY EmployeeId;", cn);
                 cmd.Parameters.AddWithValue("@id", departmentId);
 
                 using var da = new SQLiteDataAdapter(cmd);
@@ -114,6 +115,7 @@ namespace WqpViewTest
                 MessageBox.Show("Employees 読み込みエラー:\n" + ex.Message);
             }
         }
+
 
         // 左の選択が変わったら右を絞り込み表示
         private void DepartmentsGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -173,5 +175,40 @@ namespace WqpViewTest
             }
         }
 
+        private void EmployeesGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            // チェックボックス列以外は何もしない
+            if (e.Column is not DataGridCheckBoxColumn) return;
+            if (e.Row.Item is not DataRowView rowView) return;
+
+            // 主キーを取得
+            if (rowView["EmployeeId"] is DBNull) return;
+            int employeeId = Convert.ToInt32(rowView["EmployeeId"]);
+
+            // 編集後のチェック状態を取得
+            if (e.EditingElement is CheckBox chk)
+            {
+                int newValue = (chk.IsChecked == true) ? 1 : 0;
+
+                try
+                {
+                    using var cn = new SQLiteConnection(ConnStr);
+                    cn.Open();
+
+                    using var cmd = new SQLiteCommand(
+                        "UPDATE Employees SET IsActive = @v WHERE EmployeeId = @id;", cn);
+                    cmd.Parameters.AddWithValue("@v", newValue);
+                    cmd.Parameters.AddWithValue("@id", employeeId);
+                    cmd.ExecuteNonQuery();
+
+                    // DataTable側も即反映（画面のズレ防止）
+                    rowView["IsActive"] = newValue;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("フラグ更新エラー:\n" + ex.Message);
+                }
+            }
+        }
     }
 }
