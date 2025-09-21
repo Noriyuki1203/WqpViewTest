@@ -53,7 +53,10 @@
                           CanUserAddRows="False"
                           SelectionMode="Single"
                           SelectionChanged="DepartmentsGrid_SelectionChanged"
-                          RowHeaderWidth="0">
+                          RowHeaderWidth="0"
+                          SelectionUnit="FullRow"
+                          PreviewMouseLeftButtonDown="DepartmentsGrid_PreviewMouseLeftButtonDown">
+
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="更新 (Refresh)" />
@@ -72,23 +75,42 @@
             <!-- 右：Employees -->
             <GroupBox Header="Employees (選択部署のみ)" Margin="6" Width="450">
                 <DataGrid x:Name="EmployeesGrid"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="False"
-                          CanUserAddRows="False"
-                          RowHeaderWidth="0"
-                          CellEditEnding="EmployeesGrid_CellEditEnding">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="ID" Binding="{Binding [EmployeeId]}" IsReadOnly="True" Width="60"/>
-                        <DataGridTextColumn Header="名前" Binding="{Binding [Name]}" Width="*"/>
-                        <DataGridTextColumn Header="年齢" Binding="{Binding [Age]}" Width="60"/>
-                        <DataGridTextColumn Header="部署ID" Binding="{Binding [DepartmentId]}" IsReadOnly="True" Width="80"/>
+          AutoGenerateColumns="False"
+          CanUserAddRows="False"
+          RowHeaderWidth="0"
+          CellEditEnding="EmployeesGrid_CellEditEnding">
 
-                        <!-- ★ 0/1 をチェックボックスで表示・編集 -->
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID"
+                        Binding="{Binding [EmployeeId]}"
+                        SortMemberPath="EmployeeId"
+                        IsReadOnly="True" Width="60"/>
+
+                        <DataGridTextColumn Header="名前"
+                        Binding="{Binding [Name]}"
+                        SortMemberPath="Name"
+                        Width="*"/>
+
+                        <DataGridTextColumn Header="年齢"
+                        Binding="{Binding [Age]}"
+                        SortMemberPath="Age"
+                        Width="60"/>
+
+                        <DataGridTextColumn Header="部署ID"
+                        Binding="{Binding [DepartmentId]}"
+                        SortMemberPath="DepartmentId"
+                        IsReadOnly="True" Width="80"/>
+
                         <DataGridCheckBoxColumn Header="有効"
-                                                Binding="{Binding [IsActive], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource IntToBoolConverter}}"
-                                                Width="80"/>
+                            Binding="{Binding [IsActive],
+                                      Mode=TwoWay,
+                                      UpdateSourceTrigger=PropertyChanged,
+                                      Converter={StaticResource IntToBoolConverter}}"
+                            SortMemberPath="IsActive"
+                            Width="80"/>
                     </DataGrid.Columns>
                 </DataGrid>
+
             </GroupBox>
         </StackPanel>
     </Grid>

@@ -41,13 +41,11 @@ namespace WqpViewTest
 
             LoadDepartments();      // 左の表を読み込む
             EmployeesGrid.ItemsSource = _employeesTable.DefaultView;
-
-
         }
 
 
         /// <summary>
-        /// デパートテーブルをロードする
+        /// デパートテーブルをロード
         /// </summary>
         private void LoadDepartments()
         {
@@ -61,18 +59,17 @@ namespace WqpViewTest
                     return;
                 }
 
-                // DBに接続する
+                // DBに接続
                 using var cn = new SQLiteConnection(ConnStr);
                 cn.Open();
 
 
+                // SQL文を作成し実行
                 using var da = new SQLiteDataAdapter(
                     "SELECT DepartmentId, DepartmentName FROM Departments ORDER BY DepartmentId;", cn);
                 var dt = new DataTable();
                 da.Fill(dt);
                 DepartmentsGrid.ItemsSource = dt.DefaultView;
-
-
             }
             catch (Exception ex)
             {
@@ -80,6 +77,10 @@ namespace WqpViewTest
             }
         }
 
+
+        /// <summary>
+        /// 従業員一覧を一時保存するメソッド
+        /// </summary>
         private void InitEmployeesTableSchema()
         {
             _employeesTable.Columns.Add("EmployeeId", typeof(int));
@@ -90,14 +91,20 @@ namespace WqpViewTest
         }
 
 
-
+        /// <summary>
+        /// 従業員テーブルをロード
+        /// </summary>
+        /// <param name="departmentId"></param>
         private void LoadEmployeesByDepartment(int departmentId)
         {
             try
             {
+                // データベースに接続
                 using var cn = new SQLiteConnection(ConnStr);
                 cn.Open();
 
+
+                // SQL文を作成し実行
                 using var cmd = new SQLiteCommand(
                     @"SELECT EmployeeId, Name, Age, DepartmentId, IsActive
               FROM Employees
@@ -105,9 +112,13 @@ namespace WqpViewTest
               ORDER BY EmployeeId;", cn);
                 cmd.Parameters.AddWithValue("@id", departmentId);
 
+
+                // データをDataTableに保存
                 using var da = new SQLiteDataAdapter(cmd);
                 var dt = new DataTable();
                 da.Fill(dt);
+
+                // DataGridに表示
                 EmployeesGrid.ItemsSource = dt.DefaultView;
             }
             catch (Exception ex)
@@ -128,7 +139,9 @@ namespace WqpViewTest
             }
             else
             {
-                _employeesTable.Clear(); // ← nullにしない
+                _employeesTable.Clear();
+                EmployeesGrid.ItemsSource = null;
+
             }
         }
 
@@ -208,6 +221,21 @@ namespace WqpViewTest
                 {
                     MessageBox.Show("フラグ更新エラー:\n" + ex.Message);
                 }
+            }
+        }
+
+        private void DepartmentsGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var grid = (DataGrid)sender;
+
+            // クリック位置に DataGridRow があるか調べる
+            var dep = e.OriginalSource as DependencyObject;
+            var row = ItemsControl.ContainerFromElement(grid, dep) as DataGridRow;
+
+            if (row == null)
+            {
+                // 行の外（余白）をクリックした → 選択解除
+                grid.UnselectAll();
             }
         }
     }
