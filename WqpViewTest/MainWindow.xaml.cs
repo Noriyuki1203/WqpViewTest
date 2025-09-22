@@ -128,29 +128,54 @@ namespace WqpViewTest
         }
 
 
-        // 左の選択が変わったら右を絞り込み表示
+        /// <summary>
+        /// 部署での絞り込み
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DepartmentsGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (DepartmentsGrid.SelectedItem is DataRowView row &&
                       row.Row.Table.Columns.Contains("DepartmentId") &&
                       int.TryParse(row["DepartmentId"]?.ToString(), out int depId))
+            // 選択された行を主特区できるか確認
+            //列が存在するかチェック
+            //整数に変換できる確認
             {
+                // 全ての条件を満たせば部署IDをキーに従業員を読み込む
                 LoadEmployeesByDepartment(depId);
             }
             else
             {
+                // 部署が選択されていない、または不正な値の場合は従業員リストをクリアする
                 _employeesTable.Clear();
+                // DataGrid のデータソースを外して表示を消す
                 EmployeesGrid.ItemsSource = null;
 
             }
         }
 
+        /// <summary>
+        /// 行ダブルクリックで部署をインライン編集
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DepartmentsGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (DepartmentsGrid.SelectedItem is not DataRowView row) return;
+            if (DepartmentsGrid.SelectedItem is not DataRowView row)
+            {
+                // 選択行を取得できない場合
+
+                // 何もせず終了
+                return;
+            }
 
             // 既存値の取得
-            if (!int.TryParse(row["DepartmentId"].ToString(), out int depId)) return;
+            if (!int.TryParse(row["DepartmentId"].ToString(), out int depId))
+            {
+                return;
+            }
+
             string oldName = row["DepartmentName"]?.ToString() ?? "";
 
             // 入力ダイアログ
