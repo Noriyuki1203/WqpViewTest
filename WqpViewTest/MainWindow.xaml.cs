@@ -183,25 +183,44 @@ namespace WqpViewTest
                 "部署名を入力してください：", "部署名の編集", oldName);
 
             // Cancel or 変更なし
-            if (newName is null) return;
+            if (newName is null)
+            {
+                // 空欄が入力された場合プログラムを終了
+                return;
+            }
+
             newName = newName.Trim();
-            if (newName.Length == 0 || newName == oldName) return;
+            if (newName.Length == 0 || newName == oldName)
+            {
+                // もし新しい名前が０文字または前と同じ名前の場合
+                // プログラムを就労
+                return;
+            }
 
             try
             {
+                // DBに接続
                 using var cn = new SQLiteConnection(ConnStr);
                 cn.Open();
+
+                // トランザクションで開始
                 using var tx = cn.BeginTransaction();
 
+                // 部署名を変更するSQLを実行
                 using (var cmd = new SQLiteCommand(
                     "UPDATE Departments SET DepartmentName = @name WHERE DepartmentId = @id;", cn, tx))
                 {
                     cmd.Parameters.AddWithValue("@name", newName);
                     cmd.Parameters.AddWithValue("@id", depId);
+
+                    // SQLを実行
                     cmd.ExecuteNonQuery();
                 }
 
+                // コミットで確定
                 tx.Commit();
+
+                // 部署一覧を再読み込み
                 LoadDepartments(); // 再読込
 
                 // 変更した部署の従業員を右側も更新（選択を維持していれば自動でもOKだが明示的に）
@@ -209,34 +228,69 @@ namespace WqpViewTest
             }
             catch (Exception ex)
             {
+                // エラー内容を表示
                 MessageBox.Show("部署名更新エラー:\n" + ex.Message);
             }
         }
 
+
+        /// <summary>
+        /// 従業員一覧（EmployeesGrid）のセル編集終了イベント
+        /// チェックボックス列が編集されたら DB の IsActive を更新する
+        /// </summary>
         private void EmployeesGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            // チェックボックス列以外は何もしない
-            if (e.Column is not DataGridCheckBoxColumn) return;
-            if (e.Row.Item is not DataRowView rowView) return;
+            if (e.Column is not DataGridCheckBoxColumn)
+            {
+                // もしチェックボックス以外の列の場合
+                // メソッドを終了
+                return;
+            }
+
+            if (e.Row.Item is not DataRowView rowView)
+            {
+                // 行のデータを取得できない場合
+                // メソッドを終了
+                return;
+            }
 
             // 主キーを取得
-            if (rowView["EmployeeId"] is DBNull) return;
+            if (rowView["EmployeeId"] is DBNull)
+            {
+                // 主キーがnullの場合
+                // メソッドを終了
+                return;
+            }
+
+            // 主キーを取得
             int employeeId = Convert.ToInt32(rowView["EmployeeId"]);
 
             // 編集後のチェック状態を取得
             if (e.EditingElement is CheckBox chk)
             {
-                int newValue = (chk.IsChecked == true) ? 1 : 0;
+                int newValue = -1;
+                if (chk.IsChecked == true)
+                {
+                    newValue = 1;
+                }
+                else
+                {
+                    newValue = 0;
+                }
 
                 try
                 {
+                    // DBに接続
                     using var cn = new SQLiteConnection(ConnStr);
                     cn.Open();
 
+                    // SQL文を作成
                     using var cmd = new SQLiteCommand(
                         "UPDATE Employees SET IsActive = @v WHERE EmployeeId = @id;", cn);
                     cmd.Parameters.AddWithValue("@v", newValue);
                     cmd.Parameters.AddWithValue("@id", employeeId);
+
+                    // SQL文を実行
                     cmd.ExecuteNonQuery();
 
                     // DataTable側も即反映（画面のズレ防止）
@@ -244,22 +298,33 @@ namespace WqpViewTest
                 }
                 catch (Exception ex)
                 {
+                    // エラー内容を表示
                     MessageBox.Show("フラグ更新エラー:\n" + ex.Message);
                 }
             }
         }
 
+
+        /// <summary>
+        /// 余白クリックで選択解除
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DepartmentsGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // イベント発生元のDataGridを取得
             var grid = (DataGrid)sender;
 
-            // クリック位置に DataGridRow があるか調べる
+            // 実際にクリックされた要素
             var dep = e.OriginalSource as DependencyObject;
+
+            // その要素が属する DataGridRow を取得
             var row = ItemsControl.ContainerFromElement(grid, dep) as DataGridRow;
 
             if (row == null)
             {
-                // 行の外（余白）をクリックした → 選択解除
+                // もしクリック位置に行がない場合
+                // 選択状態を解除
                 grid.UnselectAll();
             }
         }
