@@ -27,6 +27,17 @@ namespace WqpViewTest
         // ★ 空でもヘッダーを出すためにスキーマを持ったテーブルを保持
         private readonly DataTable _employeesTable = new DataTable();
 
+        // 最後に赤くした行の主キー（DepartmentId）を保持
+        private int? _lastHighlightedId;
+
+        // 既定の行背景を戻す時に使う（必要に応じてテーマ色に合わせて変更）
+        private static readonly Brush DefaultRowBackground = Brushes.White;
+        private static readonly Brush DefaultRowForeground = Brushes.Black;
+
+        // 赤ハイライト用
+        private static readonly Brush HighlightBackground = Brushes.LightCoral;
+        private static readonly Brush HighlightForeground = Brushes.White;
+
 
         /// <summary>
         /// コンストラクタ
@@ -42,6 +53,102 @@ namespace WqpViewTest
             LoadDepartments();      // 左の表を読み込む
             EmployeesGrid.ItemsSource = _employeesTable.DefaultView;
         }
+
+
+        //// マウス左クリックで行を特定してハイライトIDを更新
+        //private void DepartmentsGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        //{
+        //    var dep = (DependencyObject)e.OriginalSource;
+        //    var row = ItemsControl.ContainerFromElement(DepartmentsGrid, dep) as DataGridRow;
+        //    if (row == null) return;
+
+        //    if (row.Item is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
+        //    {
+        //        int id = Convert.ToInt32(drv["DepartmentId"]);
+        //        UpdateHighlight(id);
+        //    }
+        //}
+
+        // 行が生成（再利用）されるたびに、現在のハイライトIDに応じて色を再適用
+        private void DepartmentsGrid_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            if (e.Row.Item is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
+            {
+                int id = Convert.ToInt32(drv["DepartmentId"]);
+                if (_lastHighlightedId.HasValue && id == _lastHighlightedId.Value)
+                {
+                    ApplyHighlight(e.Row);
+                }
+                else
+                {
+                    ResetHighlight(e.Row);
+                }
+            }
+            else
+            {
+                ResetHighlight(e.Row);
+            }
+        }
+
+
+
+        // ====== 内部ヘルパ ======
+
+        private void UpdateHighlight(int newId)
+        {
+            // 以前の行を消す
+            if (_lastHighlightedId.HasValue && _lastHighlightedId.Value != newId)
+            {
+                var prevItem = FindItemById(_lastHighlightedId.Value);
+                if (prevItem != null)
+                {
+                    var prevRow = (DataGridRow)DepartmentsGrid.ItemContainerGenerator.ContainerFromItem(prevItem);
+                    if (prevRow != null) ResetHighlight(prevRow);
+                }
+            }
+
+            _lastHighlightedId = newId;
+
+            // 新しい行に適用
+            var item = FindItemById(newId);
+            if (item != null)
+            {
+                var row = (DataGridRow)DepartmentsGrid.ItemContainerGenerator.ContainerFromItem(item);
+                if (row != null) ApplyHighlight(row);
+            }
+            // ※ 行がまだ未生成（画面外など）の場合でも問題なし。
+            //    その行が可視化された時（LoadingRow）に自動で赤が当たります。
+        }
+
+        private object? FindItemById(int id)
+        {
+            // ItemsSource が DataView / DataTable想定（ご提示コードに合わせています）
+            foreach (var obj in DepartmentsGrid.Items)
+            {
+                if (obj is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
+                {
+                    if (Convert.ToInt32(drv["DepartmentId"]) == id)
+                        return obj;
+                }
+            }
+            return null;
+        }
+
+        private static void ApplyHighlight(DataGridRow row)
+        {
+            row.Background = HighlightBackground;   // ローカル値はスタイルトリガより優先される
+            row.Foreground = HighlightForeground;
+        }
+
+        private static void ResetHighlight(DataGridRow row)
+        {
+            // 既定へ戻す（ClearValueでもOK）
+            row.Background = DefaultRowBackground;
+            row.Foreground = DefaultRowForeground;
+        }
+
+
+
 
 
         /// <summary>
@@ -136,23 +243,19 @@ namespace WqpViewTest
         private void DepartmentsGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (DepartmentsGrid.SelectedItem is DataRowView row &&
-                      row.Row.Table.Columns.Contains("DepartmentId") &&
-                      int.TryParse(row["DepartmentId"]?.ToString(), out int depId))
-            // 選択された行を主特区できるか確認
-            //列が存在するかチェック
-            //整数に変換できる確認
+                row.Row.Table.Columns.Contains("DepartmentId") &&
+                int.TryParse(row["DepartmentId"]?.ToString(), out int depId))
             {
-                // 全ての条件を満たせば部署IDをキーに従業員を読み込む
+                // 有効な DepartmentId → 右側を読み込み
                 LoadEmployeesByDepartment(depId);
             }
             else
             {
-                // 部署が選択されていない、または不正な値の場合は従業員リストをクリアする
+                // 右側を空に（列ヘッダーは残したいなら ItemsSource を切らずに Clear のみ）
                 _employeesTable.Clear();
-                // DataGrid のデータソースを外して表示を消す
-                EmployeesGrid.ItemsSource = null;
-
+                EmployeesGrid.ItemsSource = _employeesTable.DefaultView; // ← これを維持すると列が消えません
             }
+
         }
 
         /// <summary>
@@ -312,21 +415,24 @@ namespace WqpViewTest
         /// <param name="e"></param>
         private void DepartmentsGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // イベント発生元のDataGridを取得
             var grid = (DataGrid)sender;
-
-            // 実際にクリックされた要素
             var dep = e.OriginalSource as DependencyObject;
-
-            // その要素が属する DataGridRow を取得
             var row = ItemsControl.ContainerFromElement(grid, dep) as DataGridRow;
 
             if (row == null)
             {
-                // もしクリック位置に行がない場合
-                // 選択状態を解除
+                // 行の外（余白）をクリック → 選択解除
                 grid.UnselectAll();
+                return;
             }
+
+            // 行をクリック → 最後にクリックした行を赤ハイライト
+            if (row.Item is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
+            {
+                int id = Convert.ToInt32(drv["DepartmentId"]);
+                UpdateHighlight(id);
+            }
+
         }
     }
 }
