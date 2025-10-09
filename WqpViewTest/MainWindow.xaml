@@ -8,10 +8,14 @@
         Title="MainWindow" Height="450" Width="800">
 
     <!--<Window.Resources>
-        --><!-- 0/1 <-> bool --><!--
+        -->
+    <!-- 0/1 <-> bool -->
+    <!--
         <local:IntToBoolConverter x:Key="IntToBoolConverter"/>
 
-        --><!-- 見出しを枠内に表示する GroupBox テンプレート（そのまま） --><!--
+        -->
+    <!-- 見出しを枠内に表示する GroupBox テンプレート（そのまま） -->
+    <!--
         <Style x:Key="InnerHeaderGroupBox" TargetType="GroupBox">
             <Setter Property="BorderBrush" Value="#9AA0A6"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -48,7 +52,7 @@
             <!-- 左：Departments（そのまま） -->
             <!--<GroupBox Header="Departments" Margin="6" Width="250" Style="{StaticResource InnerHeaderGroupBox}">-->
             <GroupBox Header="Departments" Margin="6" Width="250" >
-                    <DataGrid x:Name="DepartmentsGrid"
+                <DataGrid x:Name="DepartmentsGrid"
                               AutoGenerateColumns="False"
                               IsReadOnly="False"
                               CanUserAddRows="False"
@@ -57,43 +61,42 @@
                               RowHeaderWidth="0"
                               SelectionChanged="DepartmentsGrid_SelectionChanged"
                               PreviewMouseLeftButtonDown="DepartmentsGrid_PreviewMouseLeftButtonDown"
-                              LoadingRow="DepartmentsGrid_LoadingRow"
+                              
                               FocusVisualStyle="{x:Null}"
                               Background="White">
+                    <DataGrid.Resources>
+                        <!-- 非アクティブ選択行（ウィンドウが非フォーカス時） -->
+                        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Red"/>
+                        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
 
+                        <!-- アクティブ選択行（フォーカス中） -->
+                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#1E90FF"/>
+                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
+                    </DataGrid.Resources>
+
+                    <!-- ▼ 行ごとのスタイル設定 -->
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
+                            <!-- 通常時 -->
                             <Setter Property="Background" Value="White"/>
                             <Setter Property="Foreground" Value="Black"/>
+
+                            <!-- 状態に応じたトリガー -->
                             <Style.Triggers>
+                                <!-- マウスホバー中 -->
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#E0F3FF"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Trigger>
+
+                                <!-- 選択中 -->
                                 <Trigger Property="IsSelected" Value="True">
-                                    <!-- 選択がかかっても既存の色を維持 -->
-                                    <Setter Property="Background"
-                            Value="{Binding RelativeSource={RelativeSource Self}, Path=Background}"/>
-                                    <Setter Property="Foreground"
-                            Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
+                                    <Setter Property="Background" Value="#1E90FF"/>
+                                    <Setter Property="Foreground" Value="White"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
-
-                    <DataGrid.CellStyle>
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="Background"
-                                  Value="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Background}"/>
-                            <Setter Property="Foreground"
-                                  Value="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Foreground}"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background"
-                            Value="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Background}"/>
-                                    <Setter Property="Foreground"
-                            Value="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Foreground}"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGrid.CellStyle>
-
 
                     <DataGrid.ContextMenu>
                         <ContextMenu>
@@ -116,8 +119,43 @@
                 <DataGrid x:Name="EmployeesGrid"
           AutoGenerateColumns="False"
           CanUserAddRows="False"
-          RowHeaderWidth="0"
-          CellEditEnding="EmployeesGrid_CellEditEnding">
+          RowHeaderWidth="0"                                   >
+                    <!--CellEditEnding="EmployeesGrid_CellEditEnding">-->
+
+          <DataGrid.Resources>
+        <!-- 非アクティブ選択行（ウィンドウが非フォーカス時） -->
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Red"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
+
+        <!-- アクティブ選択行（フォーカス中） -->
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#1E90FF"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
+    </DataGrid.Resources>
+
+    <!-- ▼ 行ごとのスタイル設定 -->
+    <DataGrid.RowStyle>
+        <Style TargetType="DataGridRow">
+            <!-- 通常時 -->
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="Black"/>
+
+            <!-- 状態に応じたトリガー -->
+            <Style.Triggers>
+                <!-- マウスホバー中 -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E0F3FF"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+
+                <!-- 選択中 -->
+                <!--<Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#1E90FF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>-->
+            </Style.Triggers>
+        </Style>
+    </DataGrid.RowStyle>
+
 
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID"

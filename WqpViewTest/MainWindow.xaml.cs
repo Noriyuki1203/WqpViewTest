@@ -48,107 +48,11 @@ namespace WqpViewTest
             DatabeseHelper dbHelper = new DatabeseHelper();
             dbHelper.ConnectToDatabase();
 
-            InitEmployeesTableSchema();
+           // InitEmployeesTableSchema();
 
             LoadDepartments();      // 左の表を読み込む
             EmployeesGrid.ItemsSource = _employeesTable.DefaultView;
         }
-
-
-        //// マウス左クリックで行を特定してハイライトIDを更新
-        //private void DepartmentsGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        //{
-        //    var dep = (DependencyObject)e.OriginalSource;
-        //    var row = ItemsControl.ContainerFromElement(DepartmentsGrid, dep) as DataGridRow;
-        //    if (row == null) return;
-
-        //    if (row.Item is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
-        //    {
-        //        int id = Convert.ToInt32(drv["DepartmentId"]);
-        //        UpdateHighlight(id);
-        //    }
-        //}
-
-        // 行が生成（再利用）されるたびに、現在のハイライトIDに応じて色を再適用
-        private void DepartmentsGrid_LoadingRow(object sender, DataGridRowEventArgs e)
-        {
-            if (e.Row.Item is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
-            {
-                int id = Convert.ToInt32(drv["DepartmentId"]);
-                if (_lastHighlightedId.HasValue && id == _lastHighlightedId.Value)
-                {
-                    ApplyHighlight(e.Row);
-                }
-                else
-                {
-                    ResetHighlight(e.Row);
-                }
-            }
-            else
-            {
-                ResetHighlight(e.Row);
-            }
-        }
-
-
-
-        // ====== 内部ヘルパ ======
-
-        private void UpdateHighlight(int newId)
-        {
-            // 以前の行を消す
-            if (_lastHighlightedId.HasValue && _lastHighlightedId.Value != newId)
-            {
-                var prevItem = FindItemById(_lastHighlightedId.Value);
-                if (prevItem != null)
-                {
-                    var prevRow = (DataGridRow)DepartmentsGrid.ItemContainerGenerator.ContainerFromItem(prevItem);
-                    if (prevRow != null) ResetHighlight(prevRow);
-                }
-            }
-
-            _lastHighlightedId = newId;
-
-            // 新しい行に適用
-            var item = FindItemById(newId);
-            if (item != null)
-            {
-                var row = (DataGridRow)DepartmentsGrid.ItemContainerGenerator.ContainerFromItem(item);
-                if (row != null) ApplyHighlight(row);
-            }
-            // ※ 行がまだ未生成（画面外など）の場合でも問題なし。
-            //    その行が可視化された時（LoadingRow）に自動で赤が当たります。
-        }
-
-        private object? FindItemById(int id)
-        {
-            // ItemsSource が DataView / DataTable想定（ご提示コードに合わせています）
-            foreach (var obj in DepartmentsGrid.Items)
-            {
-                if (obj is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
-                {
-                    if (Convert.ToInt32(drv["DepartmentId"]) == id)
-                        return obj;
-                }
-            }
-            return null;
-        }
-
-        private static void ApplyHighlight(DataGridRow row)
-        {
-            row.Background = HighlightBackground;   // ローカル値はスタイルトリガより優先される
-            row.Foreground = HighlightForeground;
-        }
-
-        private static void ResetHighlight(DataGridRow row)
-        {
-            // 既定へ戻す（ClearValueでもOK）
-            row.Background = DefaultRowBackground;
-            row.Foreground = DefaultRowForeground;
-        }
-
-
-
 
 
         /// <summary>
@@ -188,14 +92,14 @@ namespace WqpViewTest
         /// <summary>
         /// 従業員一覧を一時保存するメソッド
         /// </summary>
-        private void InitEmployeesTableSchema()
-        {
-            _employeesTable.Columns.Add("EmployeeId", typeof(int));
-            _employeesTable.Columns.Add("Name", typeof(string));
-            _employeesTable.Columns.Add("Age", typeof(int));
-            _employeesTable.Columns.Add("DepartmentId", typeof(int));
-            _employeesTable.Columns.Add("IsActive", typeof(int)); // 0/1想定
-        }
+        //private void InitEmployeesTableSchema()
+        //{
+        //    _employeesTable.Columns.Add("EmployeeId", typeof(int));
+        //    _employeesTable.Columns.Add("Name", typeof(string));
+        //    _employeesTable.Columns.Add("Age", typeof(int));
+        //    _employeesTable.Columns.Add("DepartmentId", typeof(int));
+        //    _employeesTable.Columns.Add("IsActive", typeof(int)); // 0/1想定
+        //}
 
 
         /// <summary>
@@ -259,156 +163,6 @@ namespace WqpViewTest
         }
 
         /// <summary>
-        /// 行ダブルクリックで部署をインライン編集
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DepartmentsGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (DepartmentsGrid.SelectedItem is not DataRowView row)
-            {
-                // 選択行を取得できない場合
-
-                // 何もせず終了
-                return;
-            }
-
-            // 既存値の取得
-            if (!int.TryParse(row["DepartmentId"].ToString(), out int depId))
-            {
-                return;
-            }
-
-            string oldName = row["DepartmentName"]?.ToString() ?? "";
-
-            // 入力ダイアログ
-            string? newName = Interaction.InputBox(
-                "部署名を入力してください：", "部署名の編集", oldName);
-
-            // Cancel or 変更なし
-            if (newName is null)
-            {
-                // 空欄が入力された場合プログラムを終了
-                return;
-            }
-
-            newName = newName.Trim();
-            if (newName.Length == 0 || newName == oldName)
-            {
-                // もし新しい名前が０文字または前と同じ名前の場合
-                // プログラムを就労
-                return;
-            }
-
-            try
-            {
-                // DBに接続
-                using var cn = new SQLiteConnection(ConnStr);
-                cn.Open();
-
-                // トランザクションで開始
-                using var tx = cn.BeginTransaction();
-
-                // 部署名を変更するSQLを実行
-                using (var cmd = new SQLiteCommand(
-                    "UPDATE Departments SET DepartmentName = @name WHERE DepartmentId = @id;", cn, tx))
-                {
-                    cmd.Parameters.AddWithValue("@name", newName);
-                    cmd.Parameters.AddWithValue("@id", depId);
-
-                    // SQLを実行
-                    cmd.ExecuteNonQuery();
-                }
-
-                // コミットで確定
-                tx.Commit();
-
-                // 部署一覧を再読み込み
-                LoadDepartments(); // 再読込
-
-                // 変更した部署の従業員を右側も更新（選択を維持していれば自動でもOKだが明示的に）
-                LoadEmployeesByDepartment(depId);
-            }
-            catch (Exception ex)
-            {
-                // エラー内容を表示
-                MessageBox.Show("部署名更新エラー:\n" + ex.Message);
-            }
-        }
-
-
-        /// <summary>
-        /// 従業員一覧（EmployeesGrid）のセル編集終了イベント
-        /// チェックボックス列が編集されたら DB の IsActive を更新する
-        /// </summary>
-        private void EmployeesGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
-        {
-            if (e.Column is not DataGridCheckBoxColumn)
-            {
-                // もしチェックボックス以外の列の場合
-                // メソッドを終了
-                return;
-            }
-
-            if (e.Row.Item is not DataRowView rowView)
-            {
-                // 行のデータを取得できない場合
-                // メソッドを終了
-                return;
-            }
-
-            // 主キーを取得
-            if (rowView["EmployeeId"] is DBNull)
-            {
-                // 主キーがnullの場合
-                // メソッドを終了
-                return;
-            }
-
-            // 主キーを取得
-            int employeeId = Convert.ToInt32(rowView["EmployeeId"]);
-
-            // 編集後のチェック状態を取得
-            if (e.EditingElement is CheckBox chk)
-            {
-                int newValue = -1;
-                if (chk.IsChecked == true)
-                {
-                    newValue = 1;
-                }
-                else
-                {
-                    newValue = 0;
-                }
-
-                try
-                {
-                    // DBに接続
-                    using var cn = new SQLiteConnection(ConnStr);
-                    cn.Open();
-
-                    // SQL文を作成
-                    using var cmd = new SQLiteCommand(
-                        "UPDATE Employees SET IsActive = @v WHERE EmployeeId = @id;", cn);
-                    cmd.Parameters.AddWithValue("@v", newValue);
-                    cmd.Parameters.AddWithValue("@id", employeeId);
-
-                    // SQL文を実行
-                    cmd.ExecuteNonQuery();
-
-                    // DataTable側も即反映（画面のズレ防止）
-                    rowView["IsActive"] = newValue;
-                }
-                catch (Exception ex)
-                {
-                    // エラー内容を表示
-                    MessageBox.Show("フラグ更新エラー:\n" + ex.Message);
-                }
-            }
-        }
-
-
-        /// <summary>
         /// 余白クリックで選択解除
         /// </summary>
         /// <param name="sender"></param>
@@ -424,13 +178,6 @@ namespace WqpViewTest
                 // 行の外（余白）をクリック → 選択解除
                 grid.UnselectAll();
                 return;
-            }
-
-            // 行をクリック → 最後にクリックした行を赤ハイライト
-            if (row.Item is DataRowView drv && drv.Row.Table.Columns.Contains("DepartmentId"))
-            {
-                int id = Convert.ToInt32(drv["DepartmentId"]);
-                UpdateHighlight(id);
             }
 
         }
