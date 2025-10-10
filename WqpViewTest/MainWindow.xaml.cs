@@ -52,7 +52,8 @@ namespace WqpViewTest
 
             LoadDepartments();      // 左の表を読み込む
             EmployeesGrid.ItemsSource = _employeesTable.DefaultView;
-        }
+            ResetDetailsPane();
+            }
 
 
         /// <summary>
@@ -152,12 +153,17 @@ namespace WqpViewTest
             {
                 // 有効な DepartmentId → 右側を読み込み
                 LoadEmployeesByDepartment(depId);
+                var departmentName = row.Row.Table.Columns.Contains("DepartmentName")
+                    ? row["DepartmentName"]?.ToString()
+                    : null;
+                UpdateDepartmentDetails(depId, departmentName);
             }
             else
             {
                 // 右側を空に（列ヘッダーは残したいなら ItemsSource を切らずに Clear のみ）
                 _employeesTable.Clear();
-                EmployeesGrid.ItemsSource = _employeesTable.DefaultView; // ← これを維持すると列が消えません
+                EmployeesGrid.ItemsSource = _employeesTable.DefaultView;
+                ResetDetailsPane();
             }
 
         }
@@ -180,6 +186,56 @@ namespace WqpViewTest
                 return;
             }
 
+        }
+
+        /// <summary>
+        /// 右側の詳細テーブルに部署ごとの情報を組み立てて表示する
+        /// </summary>
+        /// <param name="departmentId">部署ID</param>
+        /// <param name="departmentName">部署名</param>
+        private void UpdateDepartmentDetails(int departmentId, string? departmentName)
+        {
+            var detailTable = new DataTable();
+            detailTable.Columns.Add("項目");
+            detailTable.Columns.Add("内容");
+
+            var displayName = string.IsNullOrWhiteSpace(departmentName)
+                ? $"部署 {departmentId}"
+                : departmentName;
+
+            string[] locations = { "東京本社", "大阪支社", "名古屋オフィス", "福岡サテライト", "札幌テックラボ" };
+            string[] managers = { "佐藤マネージャー", "田中リーダー", "鈴木主任", "高橋ディレクター", "伊藤マネージャー" };
+            string[] focuses = { "顧客対応強化", "新製品開発", "業務効率化", "品質改善", "社内研修" };
+
+            var location = locations[departmentId % locations.Length];
+            var manager = managers[departmentId % managers.Length];
+            var focus = focuses[departmentId % focuses.Length];
+            var monthlyGoal = 60 + (departmentId * 11 % 40);
+            var reviewDate = System.DateTime.Today.AddDays((departmentId * 3) % 20 + 7).ToString("yyyy/MM/dd");
+
+            detailTable.Rows.Add("部署名", displayName);
+            detailTable.Rows.Add("部署コード", $"DEP-{departmentId:000}");
+            detailTable.Rows.Add("拠点", location);
+            detailTable.Rows.Add("責任者", manager);
+            detailTable.Rows.Add("注力テーマ", focus);
+            detailTable.Rows.Add("月次目標", $"{monthlyGoal} 件の成果報告");
+            detailTable.Rows.Add("次回レビュー", reviewDate);
+            detailTable.Rows.Add("共有メモ", $"{displayName} のチームでは{focus}を中心に取り組んでいます。");
+
+            DetailsGrid.ItemsSource = detailTable.DefaultView;
+        }
+
+        /// <summary>
+        /// 右側テーブルの初期メッセージを設定
+        /// </summary>
+        private void ResetDetailsPane()
+        {
+            var detailTable = new DataTable();
+            detailTable.Columns.Add("項目");
+            detailTable.Columns.Add("内容");
+            detailTable.Rows.Add("ガイド", "左側の部署を選択すると詳細が表示されます。");
+
+            DetailsGrid.ItemsSource = detailTable.DefaultView;
         }
     }
 }
